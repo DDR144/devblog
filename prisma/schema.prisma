@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─── Models ───────────────────────────────────────────────
+
+model Author {
+  id         String   @id @default(uuid()) @db.Uuid
+  name       String
+  email      String   @unique
+  bio        String   @default("")
+  avatarUrl  String   @default("") @map("avatar_url")
+  github     String   @default("")
+  twitter    String   @default("")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  posts Post[]
+
+  @@map("authors")
+}
+
+model Category {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique
+  slug        String   @unique
+  description String   @default("")
+  color       String   @default("#6366f1")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  posts Post[]
+
+  @@map("categories")
+}
+
+model Tag {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @unique
+  slug      String   @unique
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  postTags PostTag[]
+
+  @@map("tags")
+}
+
+model Post {
+  id           String    @id @default(uuid()) @db.Uuid
+  title        String
+  slug         String    @unique
+  excerpt      String    @default("")
+  content      String    @default("")
+  coverImage   String    @default("") @map("cover_image")
+  authorId     String?   @map("author_id") @db.Uuid
+  categoryId   String?   @map("category_id") @db.Uuid
+  status       String    @default("draft") @db.Text
+  readingTime  Int       @default(1) @map("reading_time")
+  views        Int       @default(0)
+  publishedAt  DateTime? @map("published_at") @db.Timestamptz()
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt    DateTime  @default(now()) @map("updated_at") @db.Timestamptz()
+
+  author   Author?  @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  category Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  postTags PostTag[]
+
+  @@index([slug])
+  @@index([status])
+  @@index([publishedAt(sort: Desc)])
+  @@index([authorId])
+  @@index([categoryId])
+  @@map("posts")
+}
+
+model PostTag {
+  postId String @map("post_id") @db.Uuid
+  tagId  String @map("tag_id") @db.Uuid
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, tagId])
+  @@map("post_tags")
+}
