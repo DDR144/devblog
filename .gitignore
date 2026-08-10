@@ -27,3 +27,6 @@ dist-ssr
 
 # Windows downloads zone marker (bolt.new artifacts)
 *:Zone.Identifier
+
+# Next.js build output
+.next/
