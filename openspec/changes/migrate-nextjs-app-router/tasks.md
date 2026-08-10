@@ -28,14 +28,14 @@ Chain strategy: pending
 | 5 | Delete SPA files, parity + docs | 350 (del) | PR 5 | `npm run build`; no vite refs | full 9-route walk | baseline commit |
 
 ## Phase 1: Foundation
-- [ ] 0.1 git init + commit SPA baseline before any change
-- [ ] 1.1 package.json: pin next@^14.2, react/react-dom@18.3.1 + @types/react@18, add prisma + @tailwindcss/postcss; drop vite, react-router, supabase-js
-- [ ] 1.2 next.config.mjs (dicebear images), postcss.config.mjs, components.json (globals.css, rsc:true), .env (6543/5432, no NEXT_PUBLIC)
-- [ ] 1.3 src/app/layout.tsx (ThemeProvider+Navbar, WebSite JSON-LD) + globals.css (index.css + prose)
-- [ ] 1.4 smoke: src/app/smoke/page.tsx Tailwind class + Prisma SELECT 1; `npm run build` green
+- [x] 0.1 git init + commit SPA baseline before any change
+- [x] 1.1 package.json: pin next@^14.2, react/react-dom@18.3.1 + @types/react@18, add prisma + @tailwindcss/postcss; drop vite, react-router, supabase-js
+- [x] 1.2 next.config.mjs (dicebear images), postcss.config.mjs, components.json (globals.css, rsc:true), .env (6543/5432, no NEXT_PUBLIC)
+- [x] 1.3 src/app/layout.tsx (ThemeProvider+Navbar, WebSite JSON-LD) + globals.css (index.css + prose)
+- [x] 1.4 smoke: src/app/smoke/page.tsx Tailwind class + Prisma SELECT 1; `npm run build` green
 - [ ] 2.1 `prisma db pull` (5432) → schema.prisma 5 tables; tune relations
 - [ ] 2.2 diff --from-empty → migrations/0_init + resolve --applied; no data stmts
-- [ ] 2.3 lib/db.ts singleton (globalThis+server-only); seed.ts idempotent (email/slug), never auto-run
+- [x] 2.3 lib/db.ts singleton (globalThis+server-only); seed.ts idempotent (email/slug), never auto-run
 
 ## Phase 2: Public Routes, Markdown, SEO
 - [ ] 3.1 lib/markdown.ts server pipeline (remark→gfm→rehype-sanitize→highlight→stringify)
