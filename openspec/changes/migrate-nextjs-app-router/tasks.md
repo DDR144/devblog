@@ -33,10 +33,10 @@ Chain strategy: pending
 - [x] 1.2 next.config.mjs (dicebear images), postcss.config.mjs, components.json (globals.css, rsc:true), .env (6543/5432, no NEXT_PUBLIC)
 - [x] 1.3 src/app/layout.tsx (ThemeProvider+Navbar, WebSite JSON-LD) + globals.css (index.css + prose)
 - [x] 1.4 smoke: src/app/smoke/page.tsx Tailwind class + Prisma SELECT 1; `npm run build` green
-- [ ] 2.1 `prisma db pull` (5432) → schema.prisma 5 tables; tune relations
-- [ ] 2.2 diff --from-empty → migrations/0_init + resolve --applied; no data stmts
+- [x] 2.1 `prisma db pull` (5432) → schema.prisma 5 tables; tune relations
+- [x] 2.2 diff --from-empty → migrations/0_init + resolve --applied; no data stmts
 - [x] 2.3a lib/db.ts singleton (globalThis+server-only)
-- [ ] 2.3b seed.ts idempotent (email/slug), never auto-run — DIFFERED to PR2 (paper-trail fix, W1)
+- [x] 2.3b seed.ts idempotent (email/slug), never auto-run — DIFFERED to PR2 (paper-trail fix, W1)
 
 ## Phase 2: Public Routes, Markdown, SEO
 - [ ] 3.1 lib/markdown.ts server pipeline (remark→gfm→rehype-sanitize→highlight→stringify)
