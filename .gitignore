@@ -30,3 +30,6 @@ dist-ssr
 
 # Next.js build output
 .next/
+
+# Local env — NEVER commit
+.env
