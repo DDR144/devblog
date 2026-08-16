@@ -33,8 +33,8 @@ Chain strategy: pending
 - [x] 1.2 next.config.mjs (dicebear images), postcss.config.mjs, components.json (globals.css, rsc:true), .env (6543/5432, no NEXT_PUBLIC)
 - [x] 1.3 src/app/layout.tsx (ThemeProvider+Navbar, WebSite JSON-LD) + globals.css (index.css + prose)
 - [x] 1.4 smoke: src/app/smoke/page.tsx Tailwind class + Prisma SELECT 1; `npm run build` green
-- [x] 2.1 `prisma db pull` (5432) → schema.prisma 5 tables; tune relations
-- [x] 2.2 diff --from-empty → migrations/0_init + resolve --applied; no data stmts
+- [x] 2.1 schema verificado 1:1 vs SQL; `prisma db pull` NO ejecutó (DB vacía) — sustituido por `migrate diff --from-empty` (documentado en apply-progress)
+- [x] 2.2 diff --from-empty → migrations/0_init + deploy; no data stmts
 - [x] 2.3a lib/db.ts singleton (globalThis+server-only)
 - [x] 2.3b seed.ts idempotent (email/slug), never auto-run — DIFFERED to PR2 (paper-trail fix, W1)
 
