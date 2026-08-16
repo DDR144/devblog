@@ -1,6 +1,7 @@
 import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/db";
 import { PostCard } from "@/components/PostCard";
+import { toISOString } from "@/lib/utils";
 
 const getPublishedPosts = unstable_cache(
   async () => {
@@ -114,7 +115,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
               slug={post.slug}
               excerpt={post.excerpt}
               coverImage={post.coverImage}
-              publishedAt={post.publishedAt?.toISOString() ?? post.createdAt.toISOString()}
+              publishedAt={toISOString(post.publishedAt ?? post.createdAt)}
               readingTime={post.readingTime}
               authorName={post.author?.name ?? "Unknown"}
               categoryName={post.category?.name ?? "Uncategorized"}

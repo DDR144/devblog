@@ -6,7 +6,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { renderMarkdown } from "@/lib/markdown";
 import { buildPostMetadata, buildArticleJsonLd } from "@/lib/seo";
-import { formatDate } from "@/lib/utils";
+import { formatDate, toISOString } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 
 const getPostBySlug = unstable_cache(
@@ -47,8 +47,8 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
     slug: post.slug,
     excerpt: post.excerpt,
     coverImage: post.coverImage,
-    publishedAt: post.publishedAt?.toISOString() ?? post.createdAt.toISOString(),
-    updatedAt: post.updatedAt.toISOString(),
+    publishedAt: toISOString(post.publishedAt ?? post.createdAt),
+    updatedAt: toISOString(post.updatedAt),
     authorName: post.author?.name ?? "Unknown",
     authorId: post.author?.id ?? "",
   });
@@ -74,8 +74,8 @@ export default async function PostPage({ params }: PostPageProps) {
     slug: post.slug,
     excerpt: post.excerpt,
     coverImage: post.coverImage,
-    publishedAt: post.publishedAt?.toISOString() ?? post.createdAt.toISOString(),
-    updatedAt: post.updatedAt.toISOString(),
+    publishedAt: toISOString(post.publishedAt ?? post.createdAt),
+    updatedAt: toISOString(post.updatedAt),
     authorName: post.author?.name ?? "Unknown",
     authorId: post.author?.id ?? "",
   });
@@ -118,7 +118,7 @@ export default async function PostPage({ params }: PostPageProps) {
               </Link>
             )}
             <span>·</span>
-            <time dateTime={post.publishedAt?.toISOString()}>
+            <time dateTime={toISOString(post.publishedAt)}>
               {formatDate(post.publishedAt ?? post.createdAt)}
             </time>
             <span>·</span>
