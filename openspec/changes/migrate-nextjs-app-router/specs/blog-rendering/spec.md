@@ -28,12 +28,13 @@ The system MUST render public pages as Server Components by default. Client Comp
 
 The system MUST pre-render public routes at build time (SSG) and revalidate on a time-based interval (ISR). Static params MUST be generated for all seeded content.
 
-#### Scenario: Home page pre-renders with ISR revalidation
+#### Scenario: Home page revalidates data on a time interval
 
-- GIVEN the home page lists posts
+- GIVEN the home page lists posts and reads search filters (`q`, `category`, `tag`)
 - WHEN `npm run build` executes
-- THEN the home page output type is Static (Σ or ○)
-- AND the page specifies a `revalidate` interval
+- THEN the home page output type is Dynamic (ƒ) because reading `searchParams` forces per-request rendering in Next 14
+- AND the data layer (posts, categories) is cached with `unstable_cache` and a `revalidate` interval
+- AND the rendered HTML for the same filters is served from the cached data within the revalidation window
 
 #### Scenario: Post detail pre-renders for all slugs
 
