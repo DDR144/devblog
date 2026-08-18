@@ -62,8 +62,10 @@ export default async function PostPage({ params }: PostPageProps) {
     notFound();
   }
 
-  // Render-time views increment (D3: fire-and-forget, no cache invalidation)
-  await prisma.post.update({
+  // Render-time views increment (D3: fire-and-forget, no cache invalidation).
+  // Must NOT be awaited: blocking the render exhausts the pgbouncer pool
+  // (connection_limit=1) during parallel prerender of the 5 seeded posts (P2024).
+  void prisma.post.update({
     where: { id: post.id },
     data: { views: { increment: 1 } },
   });
