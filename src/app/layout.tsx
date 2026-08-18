@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { ThemeProvider } from "next-themes";
+import { ThemeProvider } from "@/components/theme-provider";
+import { Navbar } from "@/components/Navbar";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -47,24 +48,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <div className="min-h-screen flex flex-col">
-            <header className="border-b border-border">
-              <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-                <a href="/" className="text-xl font-bold">
-                  DevBlog
-                </a>
-                <nav className="flex gap-4 text-sm text-muted-foreground">
-                  <a href="/" className="hover:text-foreground transition-colors">
-                    Home
-                  </a>
-                  <a
-                    href="/admin"
-                    className="hover:text-foreground transition-colors"
-                  >
-                    Admin
-                  </a>
-                </nav>
-              </div>
-            </header>
+            <Navbar />
             <main className="flex-1 container mx-auto px-4 py-8">{children}</main>
             <footer className="border-t border-border py-6 text-center text-sm text-muted-foreground">
               <div className="container mx-auto px-4">
