@@ -1,17 +1,17 @@
 ```yaml
 schema: gentle-ai.verify-result/v1
-evidence_revision: sha256:e6b39ddfa571c862a210ff5eb3a3f30fb4544f4c20453eaa053d53b4c7e6f40f
+evidence_revision: sha256:905e69dc5e8386718a8615a71950aced2d32e2ca8d051552510a59fa974d1faa
 verdict: fail
 blockers: 0
 critical_findings: 0
-requirements: 3/23
-scenarios: 7/42
-test_command: npx prisma migrate status && npx prisma db seed
+requirements: 10/23
+scenarios: 23/42
+test_command: npm run typecheck
 test_exit_code: 0
-test_output_hash: sha256:3e16471929f248e0174eff5f0a0b6b340204ec5c4faa59b056830aa013139462
+test_output_hash: sha256:0efc9fd8ec61821817a633dd6c3c2c1efd9474fe68e11a06a839113da54e7333
 build_command: npm run build
 build_exit_code: 0
-build_output_hash: sha256:e6b39ddfa571c862a210ff5eb3a3f30fb4544f4c20453eaa053d53b4c7e6f40f
+build_output_hash: sha256:905e69dc5e8386718a8615a71950aced2d32e2ca8d051552510a59fa974d1faa
 ```
 
 ## Verification Report
@@ -224,16 +224,17 @@ Author row reused, not recreated: ID stable at `542e0d0b-cddd-48cf-a189-e7324d1b
 
 **PASS WITH WARNINGS — scoped to slice PR2 (Prisma Baseline).**
 Migration matches the reference schema 1:1 on tables/types/relations/FKs/indexes with zero live drift (`migrate status` up-to-date, `validate` OK); seed proven idempotent at runtime (identical counts/IDs after re-run, zero duplicates); build + typecheck green. Two non-blocking warnings: fresh-env parity of RLS/CHECK/trigger in the baseline, and the 2.1 paper-trail.
-**Full change: FAIL (partial, expected)** — 16/23 requirements and tasks 3.1–5.2 (PR3–PR5) remain unimplemented; the chain is not archive-ready until they land.---
 
-## Verification Report — PR3 (Public Routes, Markdown, SEO) — RE-VERIFICATION after CRITICAL fix
+---
+
+## Verification Report — PR3 (Public Routes, Markdown, SEO) — RE-VERIFICATION #2 (after CRITICAL fix 2: b0c0135)
 
 ```yaml
 schema: gentle-ai.verify-result/v1
 evidence_revision: sha256:905e69dc5e8386718a8615a71950aced2d32e2ca8d051552510a59fa974d1faa
 verdict: fail
-blockers: 1
-critical_findings: 1
+blockers: 0
+critical_findings: 0
 requirements: 10/23
 scenarios: 23/42
 test_command: npm run typecheck
@@ -246,11 +247,11 @@ build_output_hash: sha256:905e69dc5e8386718a8615a71950aced2d32e2ca8d051552510a59
 
 **Change**: migrate-nextjs-app-router
 **Slice**: PR3 — Public Routes, Markdown, SEO (tasks 3.1–3.8 + capture migration W1)
-**Branches verified**: `feat/pr3c-seo-cleanup` (chains pr3a-foundation → pr3b-public-routes → pr3c-seo-cleanup; contains fix `bac28e0`, merged via `8bb0803`)
+**Branches verified**: `feat/pr3c-seo-cleanup` @ `820a60c` (merge of `feat/pr3b-public-routes`; contains fix 2 `b0c0135`; HEAD tree = pr3b features + `.catch` increment)
 **Version**: N/A (delta specs, 5 files — 23 requirements / 42 scenarios authoritative)
 **Mode**: Standard (no TDD — no test runner detected; manual checklist per design)
-**Re-verification of**: the PR3 CRITICAL — `await prisma.post.update(...)` causing intermittent `npm run build` failures (Prisma P2024 pool exhaustion, `connection_limit=1`). Fix under test: commit `bac28e0` "make views increment fire-and-forget" (`void prisma.post.update(...)`, per design D3).
-**Slice verdict**: **FAIL** — the original build-stability CRITICAL is **CLOSED** (4/4 consecutive clean builds green, byte-identical output, zero P2024), but the fix introduced a **NEW CRITICAL functional regression**: `void prisma.post.update(...)` never executes the UPDATE (Prisma Client 6.19.3 drops the unreferenced promise — proven at runtime, 7/7 trials; DB views frozen). Slice is **NOT merge-ready** until the increment keeps the promise referenced (`.catch(() => {})`, validated) or equivalent. Full-change verdict: **FAIL (partial, expected)** — PR4 admin + PR5 cleanup pending.
+**Re-verification of**: the second CRITICAL — "views increment silently never executes" under fix 1 (`bac28e0`, `void prisma.post.update(...)`). Fix 2 under test: commit `b0c0135` "keep views increment promise referenced with error swallow" — `prisma.post.update({...}).catch(() => {})`.
+**Slice verdict**: **PASS WITH WARNINGS at CRITICAL level** — both CRITICALs are **CLOSED** with runtime evidence; slice is **merge-ready at the CRITICAL gate**. One NEW WARNING opened (increment commits non-deterministic under build-parallel prerender, quantified below). Full-change verdict: **FAIL (partial, expected)** — PR4 admin + PR5 cleanup pending; no global PASS is claimed.
 
 ### Completeness (slice)
 
@@ -263,56 +264,43 @@ build_output_hash: sha256:905e69dc5e8386718a8615a71950aced2d32e2ca8d051552510a59
 
 ### Re-verification scope
 
-Focused on the CRITICAL fix: build stability (criterion: 3/3 consecutive green builds) and views-increment behavior. The remaining PR3 findings from the previous verification (WARNINGs 1–6, SUGGESTIONs 1–6) were re-confirmed unchanged: no code outside `src/app/posts/[slug]/page.tsx:65-71` changed since the previous report (git diff scope = `bac28e0` only), the build route table is identical, and the typecheck output hash is identical.
+Focused on CRITICAL closure: (1) build stability (criterion 3/3 consecutive green builds), (2) **the central test — does the increment COMMIT with the `.catch` pattern?** Code delta since the previous re-verification is exactly `b0c0135` (page.tsx 65-76: `void prisma.post.update(...)` → referenced `prisma.post.update({...}).catch(() => {})`); the merge `820a60c` brought in no new source beyond the already-verified pr3b file set (verified: `git diff b0c0135..HEAD` touches only docs + previously-verified loading/error/not-found/sitemap/robots + smoke deletion). Remaining PR3 findings (WARNINGs 1–6, SUGGESTIONs 1–6) re-confirmed unchanged unless noted.
 
-### Build & Tests Execution (re-verification)
+### Build & Tests Execution (re-verification #2)
 
-**Typecheck**: ✅ `npm run typecheck` (tsc --noEmit) exit 0 — output hash `sha256:0efc9fd8…` (byte-identical to previous report).
+**Typecheck**: ✅ exit 0 — output hash `sha256:0efc9fd8…`, **byte-identical** to the previous report's `test_output_hash` (deterministic). Note: `npm run typecheck` on a **stale `.next`** (left from a pre-clean build) fails with TS2307 for the deleted smoke page (`.next/types/app/smoke/page.ts` — tsconfig includes `.next/types/**/*.ts`); resolved by `rm -rf .next` before build. Stale-artifact issue, **not a code defect**; methodology: clean `.next` first.
 
-**Build — 4 consecutive runs** (criterion 3/3; run #4 doubles as the views-increment probe). Each run: `rm -rf .next` + `npm run build`:
+**Build — 5 consecutive runs** (criterion 3/3 exceeded; runs #4/#5 double as views-increment probes). Each run: `rm -rf .next` + `npm run build`:
 
 | Run | Exit | P2024 count | Static pages | Log sha256 |
 |-----|------|-------------|--------------|------------|
 | #1 | 0 | 0 | 18/18 | `905e69dc…` |
 | #2 | 0 | 0 | 18/18 | `905e69dc…` |
 | #3 | 0 | 0 | 18/18 | `905e69dc…` |
-| #4 | 0 | 0 | 18/18 | `905e69dc…` |
+| #4 (probe A) | 0 | 0 | 18/18 | `905e69dc…` |
+| #5 (probe B) | 0 | 0 | 18/18 | `905e69dc…` |
 
-All four logs are **byte-identical** (single sha256 across runs, identical to the previous passing run) — the build is deterministic, not timing luck. Zero `P2024` / "Timed out fetching a new connection" occurrences in any run. Route table unchanged: `ƒ /`, `● /posts/[slug]` ×5, `● /categories/[slug]` ×5, `● /authors/[id]` ×1, `○ /categories`, `○ /robots.txt`, `○ /sitemap.xml`, `○ /_not-found`. Logs preserved: `/tmp/opencode/pr3c-build-{1..4}.log`.
+All five logs **byte-identical** (single sha256 `905e69dc…` — same as the previous passing runs). Zero `P2024` / "Timed out fetching a new connection" in any run. Route table unchanged and correct: `ƒ /`, `○ /_not-found`, `● /authors/[id]` ×1, `○ /categories`, `● /categories/[slug]` ×5, `● /posts/[slug]` ×5, `○ /robots.txt`, `○ /sitemap.xml` (18 pages). Combined with the orchestrator's 3 green runs on fix 2: **8/8 consecutive green builds** on `.catch`. Logs preserved: `/tmp/opencode/pr3c-fix2-build-{1..3}.log`, `pr3c-fix2-build-4-probe.log`, `pr3c-fix2-build-5-probe.log`.
 
-**Code inspection**: `src/app/posts/[slug]/page.tsx:65-71` — increment is `void prisma.post.update({...})`, NOT awaited, outside the render-critical path; comment documents the P2024 rationale. Matches design D3's letter ("fire-and-forget").
+**Code inspection**: `src/app/posts/[slug]/page.tsx:71-76` — `prisma.post.update({...}).catch(() => {})`: promise **referenced** (assigned into the expression chain, `.catch` attached → query dispatches), error-swallowed (a DB hiccup can never fail the render), unawaited (render never blocks → no P2024). Matches the pattern validated as Test F in the previous re-verification, and the recommended apply-side fix from that report.
 
-**Prisma migrate**: unchanged from previous verification (`migrate status` up-to-date; capture migration applied).
+### Views increment — THE CENTRAL TEST (fix 2 runtime evidence, live Supabase DB)
 
-### Views increment — NEW CRITICAL (functional regression)
+**Methodology**: read-only Prisma probe (6543 pooler — same runtime path as the app) reading the 5 seeded published posts' views; before/after an isolated `rm -rf .next && npm run build` (prerender of the 5 slugs = the production render path, D3). No `next start`/`next dev` process running during the trials (verified via pgrep) — the build is the only increment trigger. Probe script `/tmp/opencode/pr3c-views-read.ts` (throwaway, outside the repo).
 
-**The `void` fire-and-forget UPDATE never executes.** Prisma Client dispatches the query through a promise continuation chain; `void` discards the promise reference and the write is dropped — silently never sent. Proven empirically against the live Supabase DB (reads via the same 6543 pooler as the app):
+| Trial | Pattern in render path | Result |
+|-------|------------------------|--------|
+| Previous re-verification, fix 1 (`bac28e0`) | `void prisma.post.update(...)` | ❌ 0/7 committed — views frozen (regression that fix 2 addresses) |
+| Orchestrator evidence, fix 2 (3 builds) | `.catch(() => {})` | ✅ committed — api-design 1915→1917, trpc 1270→1272, docker 588→594, postgresql 2362→2367, rsc 914→916 (17/30 potential; see note) |
+| **Probe A (my build #4)** | `.catch(() => {})` | ⚠️ **3/10 committed** — postgresql 2371→**2372** (+1), docker 600→**602** (+2); trpc 1274, rsc 920, api-design 1919 **unchanged** (6/10 dropped) |
+| **Probe B (my build #5)** | `.catch(() => {})` | ✅ **10/10 committed** — all 5 slugs **+2** (trpc→1276, rsc→922, postgresql→2374, docker→604, api-design→1921) |
 
-| # | Pattern | Result |
-|---|---------|--------|
-| A | `await prisma.post.update(...)` (pooler) | ✅ COMMITTED (912→913) |
-| B | `void prisma.post.update(...)` (pooler), 12 s wait | ❌ NOT COMMITTED (1915) |
-| B×3 | `void` on 3 posts, 15 s each | ❌ NOT COMMITTED (3/3) |
-| Build #4 | `void` during prerender, all 5 slugs | ❌ NOT COMMITTED (5/5 posts) |
-| C | update + `.then` observer, 15 s | ✅ COMMITTED (1268→1269) |
-| D | update with kept reference (observed after 15 s) | ✅ RESOLVED + COMMITTED (913→914) |
-| E1 | `void` + 20 s of pool pings (`$queryRaw SELECT 1`) | ❌ NOT COMMITTED (588) |
-| E2 | `void` via DIRECT_URL 5432 (no pooler), 10 s | ❌ NOT COMMITTED (1915) |
-| F | `prisma.post.update({...}).catch(() => {})`, 10 s | ✅ COMMITTED (1269→1270) |
+**Findings**:
 
-Key differentiators: **not a pooler artifact** (E2 fails identically on the direct 5432 connection); **not an idle/timing artifact** (E1 keeps the pool busy 20 s and still drops); the differentiator is the **unreferenced promise** (`void` discards it; keeping a reference — even unobserved, Test D — dispatches and commits). Prisma version: `@prisma/client` 6.19.3.
-
-**Consequence**: views are frozen in production — the increment never persists during prerender, ISR revalidation, or any render. The post-views spec's core scenario now fails at runtime (previously rated COMPLIANT by static inspection; now disproven by runtime evidence).
-
-**Recommended apply-side fix (minimal, D3-compliant, validated by Test F)**:
-```ts
-// src/app/posts/[slug]/page.tsx — replace void with referenced, error-swallowing fire-and-forget
-prisma.post.update({
-  where: { id: post.id },
-  data: { views: { increment: 1 } },
-}).catch(() => {}); // never fails the render; promise stays referenced so the query dispatches
-```
-Then re-verify: views increment on build and on ISR revalidation. Alternative (design-level): move the increment out of the render path entirely (Route Handler `POST /api/views/[slug]` or a Server Action from a client island) — but that violates the post-views spec's zero-client-JS scenario and requires a spec change.
+1. **The freeze is BROKEN — the `.catch` pattern commits.** Probe B: 10/10 increments persisted to the live DB through the actual build prerender path; orchestrator evidence independently confirms commits. Fix 1's regression ("the query never dispatches", 0/7) is definitively gone.
+2. **Commits are NON-DETERMINISTIC under build-time parallel prerender.** Probe A: 6/10 dropped in the same code path. Root cause: the original CRITICAL's `connection_limit=1` pool contention during parallel prerender of 5 slugs — the UPDATEs that would have raised P2024 (build crash under `await`, fix 1 era) now raise P2024, get **silently swallowed by `.catch(() => {})`**, and the increment is lost without any build failure. The `.catch` converts the crash into a silent undercount. Aggregate commit rate across all fix-2 evidence: ~60% (30/50: orchestrator 17/30 + probe A 3/10 + probe B 10/10).
+3. **+2 per slug per build when both passes commit.** The page component executes twice per slug during build (RSC + HTML render passes); each run fires one increment. Fully-committed builds inflate each slug by +2 (observed uniformly in probe B). D3's approximate-counting model therefore counts ~2 "views" per build regeneration, and loses ~40% of them under contention — net effect is still a growing counter.
+4. **Runtime (single-page) behavior is inferred, not measured.** A static cache hit within the 300 s ISR window does not re-render (no increment — pre-existing D3 tradeoff, "count refreshes on next regeneration"). Single-page background ISR revalidation with an idle pool is expected to commit reliably, but could not be measured without a 5-minute wait or forcing regeneration; the build-parallel case is the documented worst case.
 
 ### Capture Migration — `prisma/migrations/2_capture_rls_check_trigger/migration.sql` vs original Bolt SQL (`supabase/migrations/20260807004121_create_devblog_schema.sql`)
 
@@ -325,40 +313,40 @@ Then re-verify: views increment on build and on ISR revalidation. Alternative (d
 | Policies | anon+authenticated SELECT/INSERT/UPDATE/DELETE on authors/categories/posts/tags; SELECT/INSERT/DELETE on post_tags (no UPDATE — junction) | Identical policy names, roles, `USING (true)`/`WITH CHECK (true)`, same post_tags shape | ✅ 1:1 (91-line capture mirrors lines 126–193 of the original) |
 | Applied | n/a | `migrate status` up-to-date; `finished_at` set | ✅ idempotency proven in practice (objects already existed in live DB; DO blocks skipped, DROP IF EXISTS recreated cleanly) |
 
-**Regression found via the trigger**: the views increment fires `update_updated_at`, so `updated_at` (→ Article `dateModified`, sitemap `lastmod`) reflects "last viewed/regenerated", not "last edited". Live evidence: post lastmods in the built sitemap are the build timestamps (2026-08-18T15:19) while the seed data was created 2026-08-16. SEO-integrity issue — see WARNING 2 (status changed while CRITICAL 2 is open: the trigger no longer fires from views since the update never executes; the drift is frozen, not fixed).
+(Unchanged from previous re-verification; re-confirmed — no migration changes since.)
 
 ### Spec Compliance Matrix (PR3 in-slice — 23 scenarios)
 
-Rows marked **CHANGED** were re-evaluated with runtime evidence; all other rows carry the previous rating, re-confirmed unchanged (no code changed outside `page.tsx:65-71`).
+Rows marked **CHANGED** were re-evaluated with the fix-2 runtime evidence; all other rows carry the previous rating, re-confirmed unchanged (code delta since last verification = `b0c0135` only).
 
 | Requirement | Scenario | Evidence | Result |
 |-------------|----------|----------|--------|
 | BR: Server/Client Split | Public page renders as Server Component | `'use client'` present ONLY in `src/app/error.tsx` (required); pages are async RSC; prerendered HTML fully formed | ✅ COMPLIANT |
-| BR: Server/Client Split | Interactive element isolates to Client Component | `Navbar.tsx`, `mode-toggle.tsx`, `theme-provider.tsx` are dedicated `'use client'` files; layout stays RSC (upgraded from PR1 PARTIAL) | ✅ COMPLIANT |
-| BR: SSG+ISR | Home page pre-renders with ISR revalidation | Build shows `ƒ /` — page reads `searchParams` → **dynamic**, not Static (Σ/○). Data layer ISR via `unstable_cache` revalidate 300 + tag 'posts' (`src/app/page.tsx:19`). Spec demands Static output; design (design.md line 24) explicitly chose "dynamic on searchParams" → spec–design conflict, scenario not literally met | ⚠️ PARTIAL |
-| BR: SSG+ISR | Post detail pre-renders for all slugs | `generateStaticParams` returns 5 slugs (`src/app/posts/[slug]/page.tsx:27-34`); build `● SSG` per slug; revalidate 300 | ✅ COMPLIANT |
-| BR: SSG+ISR | Category and author pages pre-render | `● SSG`: 5 category slugs + 1 author id (build output); spec text says `/category/[slug]`, design+impl use `/categories/[slug]` (spec-internal inconsistency) | ✅ COMPLIANT |
+| BR: Server/Client Split | Interactive element isolates to Client Component | `Navbar.tsx`, `mode-toggle.tsx`, `theme-provider.tsx` are dedicated `'use client'` files; layout stays RSC | ✅ COMPLIANT |
+| BR: SSG+ISR | Home page pre-renders with ISR revalidation | Build shows `ƒ /` — page reads `searchParams` → **dynamic**, not Static (Σ/○). Data layer ISR via `unstable_cache` revalidate 300 + tag 'posts'. Spec demands Static; design explicitly chose dynamic → spec–design conflict | ⚠️ PARTIAL |
+| BR: SSG+ISR | Post detail pre-renders for all slugs | `generateStaticParams` returns 5 slugs; build `● SSG` per slug; revalidate 300 | ✅ COMPLIANT |
+| BR: SSG+ISR | Category and author pages pre-render | `● SSG`: 5 category slugs + 1 author id; spec `/category/[slug]` vs design+impl `/categories/[slug]` (spec-internal inconsistency) | ✅ COMPLIANT |
 | BR: Loading/Error/NotFound | Loading state during data fetch | `loading.tsx` at root, posts, posts/[slug], categories (authors covered by root) | ✅ COMPLIANT |
 | BR: Loading/Error/NotFound | Error boundary with recovery | `src/app/error.tsx` client, `reset()` "Try again" button | ✅ COMPLIANT |
 | BR: Loading/Error/NotFound | Not-found for invalid slugs | `notFound()` + `posts/[slug]/not-found.tsx`; root `not-found.tsx` | ✅ COMPLIANT |
-| PV: Server-Side View Increment | View increments on page visit | **CHANGED** — `void prisma.post.update(...)` (`page.tsx:68`); DB views frozen across 4 builds + 5 controlled trials (Tests A–F): the unreferenced promise is dropped by Prisma, the write never executes | ❌ FAILING (was ✅) |
-| PV: Server-Side View Increment | Increment does not break static output | **CHANGED** — build stable 4/4 (first clause met) but AND clause "view count update happens asynchronously" fails: no update happens at all | ❌ FAILING |
-| PV: View Count Display | Count shown on post detail | **CHANGED** — `{post.views.toLocaleString()} views` (`page.tsx:129`) renders, but the count is permanently stale (never increments) | ⚠️ PARTIAL (was ✅) |
+| PV: Server-Side View Increment | View increments on page visit | **CHANGED** — `.catch(() => {})` (`page.tsx:71-76`): increments DO commit (probe B 10/10; orchestrator evidence), but NON-DETERMINISTIC under parallel prerender (probe A 3/10; ~60% aggregate). "Increments by 1 per visit" not guaranteed at build; +2/slug when both passes commit | ⚠️ PARTIAL (was ❌ FAILING) |
+| PV: Server-Side View Increment | Increment does not break static output | **CHANGED** — 8/8 consecutive green builds, zero P2024, updates fire asynchronously and commit (mostly); build never fails on the increment | ✅ COMPLIANT (was ❌ FAILING) |
+| PV: View Count Display | Count shown on post detail | **CHANGED** — `{post.views.toLocaleString()} views` renders; DB count demonstrably refreshes now (probe B) — no longer permanently stale | ✅ COMPLIANT (was ⚠️ PARTIAL) |
 | PV: No Client-Side View Tracking | No client tracking scripts | Zero `fetch` in src/app\|lib\|components; no view endpoint; increment server-only | ✅ COMPLIANT |
-| SEO: generateMetadata | Post detail metadata | title/description/og (type=article, publishedTime, modifiedTime)/twitter present — **og:image absent** (posts have no cover_image in seed; `lib/seo.ts:31,37` produce empty arrays) | ⚠️ PARTIAL |
-| SEO: generateMetadata | Author profile metadata | `buildAuthorMetadata`: title=name, description=bio, og type=profile; HTML `<title>Alex Rivera | DevBlog</title>` | ✅ COMPLIANT |
-| SEO: generateMetadata | Category/tag collection metadata | `buildCategoryMetadata`: "Frontend Articles" title + description; verified in HTML | ✅ COMPLIANT |
-| SEO: JSON-LD | Article schema on post detail | Valid JSON-LD block: headline/author/datePublished/dateModified/url present — **`image` key dropped** (`coverImage || undefined` → JSON.stringify strips it); spec lists image | ⚠️ PARTIAL |
+| SEO: generateMetadata | Post detail metadata | title/description/og (type=article, publishedTime, modifiedTime)/twitter present — **og:image absent** (seed posts have no cover_image) | ⚠️ PARTIAL |
+| SEO: generateMetadata | Author profile metadata | `buildAuthorMetadata`: title=name, description=bio, og type=profile; verified in HTML | ✅ COMPLIANT |
+| SEO: generateMetadata | Category/tag collection metadata | `buildCategoryMetadata`: title + description; verified in HTML | ✅ COMPLIANT |
+| SEO: JSON-LD | Article schema on post detail | Valid JSON-LD: headline/author/datePublished/dateModified/url — **`image` key dropped** (`coverImage \|\| undefined`) | ⚠️ PARTIAL |
 | SEO: JSON-LD | Person schema on author page | Valid block `{"@type":"Person","name":"Alex Rivera","url":…}` | ✅ COMPLIANT |
-| SEO: Sitemap and Robots | Sitemap includes all public routes | 13 URLs: home + 5 posts + categories index + 5 categories + 1 author, all with lastmod — **no tag URLs, no `/?tag=` URLs** (design checklist line 92 explicitly wants `/?tag=`) | ⚠️ PARTIAL |
-| SEO: Sitemap and Robots | Robots.txt allows crawling | Verified body: `User-Agent: * / Allow: / / Sitemap: https://devblog.dev/sitemap.xml` | ✅ COMPLIANT |
-| SEO: Canonical URLs | Canonical on post page | `rel="canonical" href="https://devblog.dev/posts/react-server-components-deep-dive"` in HTML; author/category via `alternates` | ✅ COMPLIANT |
-| SEO: Image Optimization | Cover uses next/image | PostCard + post cover + author avatar all `next/image` with width/height; dicebear remotePatterns configured | ✅ COMPLIANT |
-| PDA: Environment Variables | Env vars not in client bundle | No `NEXT_PUBLIC` in src/prisma/config; re-verified (was PR1 COMPLIANT) | ✅ COMPLIANT |
-| PDA: Connection Pooling | Runtime queries without connection exhaustion | **CHANGED** — build no longer exhausts the pool (4/4 runs, zero P2024); but the fire-and-forget write is dropped instead of completing: exhaustion gone, write broken | ⚠️ PARTIAL (was ❌ FAILING) |
+| SEO: Sitemap and Robots | Sitemap includes all public routes | 13 URLs with lastmod — **no tag URLs, no `/?tag=` URLs** (design checklist wants `/?tag=`) | ⚠️ PARTIAL |
+| SEO: Sitemap and Robots | Robots.txt allows crawling | `User-Agent: * / Allow: / / Sitemap: https://devblog.dev/sitemap.xml` | ✅ COMPLIANT |
+| SEO: Canonical URLs | Canonical on post page | `rel="canonical"` present; author/category via `alternates` | ✅ COMPLIANT |
+| SEO: Image Optimization | Cover uses next/image | PostCard + post cover + author avatar `next/image`; dicebear remotePatterns configured | ✅ COMPLIANT |
+| PDA: Environment Variables | Env vars not in client bundle | No `NEXT_PUBLIC` in src/prisma/config; re-verified | ✅ COMPLIANT |
+| PDA: Connection Pooling | Runtime queries without connection exhaustion | **CHANGED** — build no longer exhausts the pool (8/8 runs, zero P2024); but fire-and-forget writes are intermittently dropped under contention instead of completing (probe A) — exhaustion gone, write reliability degraded to ~60% at build | ⚠️ PARTIAL |
 
-**Compliance summary (PR3 in-slice, re-verified)**: 15/23 COMPLIANT, 6/23 PARTIAL, 2/23 FAILING.
-**Cumulative (change)**: 23/42 evaluated (15 COMPLIANT, 6 PARTIAL, 2 FAILING), 12 deferred (blog-admin 10 + BR admin 2, PR4); **10/23 requirements fully satisfied** (BR Server/Client Split, BR Loading/Error, PV View Count Display, PV No-Client Tracking, SEO Canonical, SEO Image, PDA Singleton, PDA Baseline, PDA Env Vars, PDA Seed).
+**Compliance summary (PR3 in-slice, re-verified #2)**: 17/23 COMPLIANT, 6/23 PARTIAL, 0/23 FAILING (no failing scenarios remain).
+**Cumulative (change)**: 23/42 evaluated (17 COMPLIANT, 6 PARTIAL), 12 deferred (blog-admin 10 + BR admin 2, PR4); **10/23 requirements fully satisfied**.
 
 ### Correctness (Static Evidence, PR3)
 
@@ -367,13 +355,13 @@ Rows marked **CHANGED** were re-evaluated with runtime evidence; all other rows 
 | `src/lib/markdown.ts` | ✅ Implemented | unified → remark-parse → remark-gfm → remark-rehype → rehype-sanitize → rehype-highlight → rehype-stringify (D4 exact) |
 | `src/lib/seo.ts` | ✅ Implemented | post/author/category metadata builders + Article/Person JSON-LD; canonical via `alternates` |
 | `src/lib/utils.ts` | ✅ Implemented | cn, slugify, estimateReadingTime, formatDate, toISOString ported |
-| `src/app/page.tsx` | ✅ Implemented | unstable_cache ×3 (posts/categories/tags), tag 'posts', revalidate 300; q/category/tag searchParams filtering; **renders `ƒ` dynamic** |
-| `src/app/posts/[slug]/page.tsx` | ✅ Implemented (**CHANGED** by `bac28e0`) | generateStaticParams(5), generateMetadata Article, Article JSON-LD, views increment, notFound(); increment is now `void` fire-and-forget (`page.tsx:68`) — unawaited (build no longer blocked) but **silently dropped by Prisma** (see NEW CRITICAL 2) |
+| `src/app/page.tsx` | ✅ Implemented | unstable_cache ×3, tag 'posts', revalidate 300; q/category/tag searchParams; **renders `ƒ` dynamic** |
+| `src/app/posts/[slug]/page.tsx` | ✅ Implemented (**CHANGED** by `b0c0135`) | generateStaticParams(5), generateMetadata Article, Article JSON-LD, notFound(); increment = referenced `prisma.post.update({...}).catch(() => {})` (`page.tsx:71-76`) — commits proven, non-deterministic under parallel prerender (see WARNING 7) |
 | `src/app/categories/**` + `authors/[id]` | ✅ Implemented | SSG + generateStaticParams + CollectionPage/ProfilePage metadata + Person JSON-LD |
 | `src/app/sitemap.ts` | ✅ Implemented | 13 URLs all with lastmod; **no tags/`/?tag=`**; queries Prisma directly (no unstable_cache — D6 deviation) |
 | `src/app/robots.ts` | ✅ Implemented | allow all + sitemap reference |
 | `src/app/layout.tsx` | ✅ Implemented | metadataBase https://devblog.dev, title template, WebSite JSON-LD, ThemeProvider+Navbar client islands |
-| loading/error/not-found set | ✅ Implemented | root + posts + posts/[slug] + categories; smoke page **deleted** (`7223e87`, -58 lines); zero `/smoke` references in src/prisma |
+| loading/error/not-found set | ✅ Implemented | root + posts + posts/[slug] + categories; smoke page **deleted**; zero `/smoke` references in src/prisma |
 | `src/components/*` | ✅ Implemented | PostCard (next/image), Navbar/mode-toggle/theme-provider `'use client'`, ui badge/button/card/skeleton server-safe |
 | Capture migration | ✅ Implemented | RLS/CHECK/trigger 1:1 vs original Bolt SQL, idempotent, applied live |
 | `prisma/migrations` naming | ✅ Implemented | `0_init` → `2_capture_rls_check_trigger` sort correctly |
@@ -382,7 +370,7 @@ Rows marked **CHANGED** were re-evaluated with runtime evidence; all other rows 
 
 | Decision | Followed? | Notes |
 |----------|-----------|-------|
-| D3 fire-and-forget views increment | ⚠️ Deviation | Implemented as `void prisma.post.update` — unawaited in letter (build stable, P2024 gone) but broken in behavior: the unreferenced promise is dropped, the write never executes. Must keep the promise referenced: `prisma.post.update({...}).catch(() => {})` |
+| D3 fire-and-forget views increment | ⚠️ Partial | Fix 2 (`b0c0135`) matches D3's letter AND restores behavior — promise referenced + `.catch`, commits proven. Reliability caveat: non-deterministic commits under build-parallel prerender (~60% aggregate; probe A 30%) — the D3 "approximate counting" tradeoff now includes occasional silent drops; runtime single-page revalidation expected reliable (inferred) |
 | D4 markdown server pipeline | ✅ Yes | Exact chain |
 | D6 single tag 'posts' + revalidate 300 | ⚠️ Partial | All page data queries wrapped; **sitemap.ts bypasses unstable_cache** |
 | D3/D6 no per-view invalidation loop | ✅ Yes | No revalidateTag on increment; admin-only tag invalidation intact |
@@ -391,28 +379,34 @@ Rows marked **CHANGED** were re-evaluated with runtime evidence; all other rows 
 | `import "server-only"` in db.ts | ⚠️ Deviation | Still missing (carried over from PR1) |
 | Sitemap incl. `/?tag=` URLs (design testing table) | ❌ Missing | See WARNING 3 |
 
-### Issues Found (PR3)
+### Issues Found (PR3, re-verification #2)
 
 **CRITICAL**:
-1. ~~**`npm run build` is intermittently failing — P2024 pool exhaustion on the views increment during prerender**~~ → **CLOSED.** `bac28e0` made the increment unawaited (`void prisma.post.update(…)`); 4/4 consecutive clean builds pass with byte-identical output (sha256 `905e69dc…`) and zero P2024. Build is stable and reproducible — the original CRITICAL criterion (3/3) is met and exceeded (4/4).
-2. **NEW — views increment silently never executes.** `void prisma.post.update(...)` (`src/app/posts/[slug]/page.tsx:68`) discards the Prisma promise; Prisma Client 6.19.3 drops the unreferenced query — DB views frozen across 4 builds and 7 controlled trials (Tests A–F, evidence above). The build fix traded an intermittent build failure for a silent functional loss: post-views spec "View increments on page visit" now FAILS at runtime. Validated fix: `prisma.post.update({…}).catch(() => {})` (Test F commits; keeps the promise referenced, swallows write errors so the render can never fail).
+1. ~~**`npm run build` intermittently fails — P2024 pool exhaustion on the views increment during prerender**~~ → **CLOSED.** Fix 1 (`bac28e0`) + fix 2 (`b0c0135`) both keep the increment unawaited; on fix 2: 8/8 consecutive green builds (5 mine + 3 orchestrator), byte-identical output (sha256 `905e69dc…`), zero P2024. Criterion (3/3) met and exceeded. Fix 2 does not regress this.
+2. ~~**Views increment silently never executes (`void` drops the Prisma promise)**~~ → **CLOSED.** Fix 2 (`b0c0135`) keeps the promise referenced with `.catch(() => {})`; the central test PASSES at the functional level: increments demonstrably commit against the live DB through the real build prerender path (probe B: 10/10; orchestrator evidence: committed across 3 builds). The frozen-views regression (0/7) is definitively resolved. Residual reliability concern downgraded to WARNING 7 (non-deterministic commits under parallel prerender — silently dropped, not frozen).
 
-**WARNING** (unchanged from previous verification unless noted — re-confirmed: no code changed outside `page.tsx:65-71`):
-1. **Home page renders `ƒ Dynamic`, not Static** — spec BR "Home page pre-renders with ISR revalidation" requires Σ/○ output; reading `searchParams` makes Next 14 render `/` per-request (build evidence). Data layer still ISR (unstable_cache, revalidate 300, tag 'posts') — design explicitly accepted this (design.md line 24). Spec–design conflict: scenario PARTIAL. (unchanged)
-2. **Views increment rewrites `updated_at` via the capture-migration trigger** — **status changed**: while CRITICAL 2 is open the trigger never fires from views (the update never executes), so the lastmod/dateModified drift observed previously is frozen, not fixed. When the increment is repaired, the trigger will fire on every view write again — the apply team should exclude views-only writes (e.g., a direct `UPDATE posts SET views = views + 1` bypassing the trigger, or a dedicated counter column).
-3. **Sitemap omits tag URLs and `/?tag=` filter URLs** — SEO spec scenario "includes … all tag URLs" and design testing checklist (design.md line 92) not met; `src/app/sitemap.ts` only emits home/posts/categories/authors (13 URLs). (unchanged)
-4. **Article JSON-LD and og:image lack `image`** — seed posts have no `cover_image` and `lib/seo.ts:58` (`coverImage || undefined`) drops the key; spec scenarios require image in Article JSON-LD and og tags. (unchanged)
-5. **apply-progress overclaims** — "18 static pages" is imprecise (home is `ƒ`); the "exit 0" claim is now accurate for build stability, but the views-increment evidence in apply-progress must be updated after CRITICAL 2 is fixed. (paper-trail class as PR1/PR2)
-6. **sitemap.ts queries Prisma without unstable_cache** — design D6 says every public Prisma query is cached; sitemap hits the DB on each ISR regeneration (minor, but a D6 deviation). (unchanged)
+**WARNING**:
+1. **Home page renders `ƒ Dynamic`, not Static** — spec BR "Home page pre-renders with ISR revalidation" requires Σ/○ output; `searchParams` forces per-request render. Data layer still ISR. Design explicitly accepted this. (unchanged)
+2. **Views increment rewrites `updated_at` via the capture-migration trigger** — **status changed: LIVE AGAIN.** While increments were frozen (fix 1), the trigger never fired; now that fix 2 commits again, every committed view write fires `update_updated_at` → `updated_at` (→ Article `dateModified`, sitemap `lastmod`) reflects "last viewed/regenerated", not "last edited". Apply team should exclude views-only writes (direct `UPDATE posts SET views = views + 1` bypassing the trigger, or a dedicated counter column).
+3. **Sitemap omits tag URLs and `/?tag=` filter URLs** — SEO spec "includes … all tag URLs" and design checklist not met (13 URLs only). (unchanged)
+4. **Article JSON-LD and og:image lack `image`** — seed posts have no `cover_image`; `coverImage || undefined` drops the key; spec scenarios require image. (unchanged)
+5. **apply-progress overclaims** — "18 static pages" imprecise (home is `ƒ`); views-increment evidence there must be refreshed to reflect fix 2 (commits, with the WARNING 7 caveat). (paper-trail class)
+6. **sitemap.ts queries Prisma without unstable_cache** — D6 deviation; DB hit on each ISR regeneration. (unchanged)
+7. **NEW — increment commits are non-deterministic under build-time parallel prerender (~60% aggregate)** — `connection_limit=1` contention on the 5-slug parallel prerender: UPDATEs that would raise P2024 are silently swallowed by `.catch(() => {})` → increments dropped with no build failure (probe A: 3/10 = 30%; probe B: 10/10; orchestrator 3 builds: ~57%; aggregate 30/50 = 60%). Same root cause as the original CRITICAL, downgraded from build-crash to silent undercount; also +2/slug/build inflation when both render passes commit (D3 approximate counting). Runtime single-page ISR revalidation (idle pool) expected to commit reliably — inferred, not directly measured (static cache hits within the 300 s window don't re-render).
 
-**SUGGESTION**:
-1. Add a `tags` route or `/?tag=` entries to the sitemap once tag pages land; or document why tag URLs are intentionally absent.
-2. Emit CollectionPage JSON-LD on category pages (design mentions CollectionPage; only Article/Person/WebSite exist today; og:type is "website").
+**SUGGESTION** (1–6 unchanged from previous verification):
+1. Add a `tags` route or `/?tag=` sitemap entries once tag pages land; or document why tag URLs are intentionally absent.
+2. Emit CollectionPage JSON-LD on category pages (only Article/Person/WebSite exist today).
 3. Align spec text to design: BR/SEO specs write `/category/[slug]`, implementation+design use `/categories/[slug]`.
 4. `import "server-only"` in `src/lib/db.ts` (carried-over PR1 deviation).
-5. Navbar `/admin` link 404s until PR4 — revisit when admin lands (pre-existing).
-6. `@updatedAt` on `Post.updatedAt` remains absent (PR2 suggestion) — with the trigger, updated_at is maintained DB-side, so acceptable; reconsider if the trigger is later removed.
+5. Navbar `/admin` link 404s until PR4 — revisit when admin lands.
+6. `@updatedAt` on `Post.updatedAt` remains absent (PR2 suggestion) — trigger maintains it DB-side; reconsider if trigger removed.
+7. **NEW — harden the increment against pool contention**: raise `connection_limit` above 1 for the runtime pool, serialize increments (e.g., a single deferred counter flush), or move the increment off the render path (Route Handler/Server Action — requires spec change, violates zero-client-JS scenario). At minimum, exclude views-only writes from the `update_updated_at` trigger (WARNING 2).
 
 ### Verdict
 
-**FAIL — scoped to slice PR3 (re-verification).** The original build-stability CRITICAL is **CLOSED**: 4/4 consecutive clean builds pass with byte-identical deterministic output and zero P2024 — the fix criterion (3/3) is met. However, the re-verification surfaced a **NEW CRITICAL**: the `void` fire-and-forget fix silently disables the views increment (Prisma drops the unreferenced promise; proven at runtime 7/7 trials — views frozen in the live DB, build #4 prerender included). The slice is **NOT merge-ready at CRITICAL level**: the increment must be re-implemented with a referenced promise (`prisma.post.update({…}).catch(() => {})`, validated by Test F) and re-verified (build green + views increment on ISR revalidation). All other PR3 findings stand unchanged. **Full change: FAIL (partial, expected)** — 10/23 requirements and tasks 4.1–5.2 (PR4 admin, PR5 cleanup) remain; chain is not archive-ready.
+**PASS WITH WARNINGS — scoped to slice PR3 (re-verification #2), merge-ready at the CRITICAL gate.**
+- CRITICAL 1 (P2024 build crash): **CLOSED** — 8/8 consecutive green builds on fix 2, byte-identical deterministic output (sha256 `905e69dc…`), zero P2024.
+- CRITICAL 2 (views frozen under `void`): **CLOSED** — the central test passes: `.catch(() => {})` keeps the promise referenced and the increment **commits** against the live DB through the real prerender path (probe B 10/10; orchestrator evidence; probe A partial). The 0/7 frozen state is definitively gone.
+- Residual reliability concern escalated as **NEW WARNING 7** (non-deterministic commits under build-parallel prerender, ~60% aggregate, silently dropped increments — same root cause as the original CRITICAL, now silent undercount instead of crash; runtime single-page revalidation expected reliable, inferred). No CRITICAL remains open; no global PASS is claimed.
+**Full change: FAIL (partial, expected)** — 10/23 requirements and tasks 4.1–5.2 (PR4 admin, PR5 cleanup) remain; chain is not archive-ready.
