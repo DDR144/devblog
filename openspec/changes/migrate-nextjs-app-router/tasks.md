@@ -39,14 +39,14 @@ Chain strategy: pending
 - [x] 2.3b seed.ts idempotent (email/slug), never auto-run — DIFFERED to PR2 (paper-trail fix, W1)
 
 ## Phase 2: Public Routes, Markdown, SEO
-- [ ] 3.1 lib/markdown.ts server pipeline (remark→gfm→rehype-sanitize→highlight→stringify)
-- [ ] 3.2 lib/seo.ts builders; utils.ts port (cn, slugify, readingTime, formatDate)
-- [ ] 3.3 app/page.tsx SSG (dynamic on q/category/tag searchParams), queries in unstable_cache tag 'posts', revalidate 300
-- [ ] 3.4 posts/[slug]: generateStaticParams(5), generateMetadata Article, JSON-LD, render-time views increment (D3), not-found()
-- [ ] 3.5 categories/+[slug] y authors/[id]: SSG, CollectionPage/ProfilePage metadata, Person JSON-LD
-- [ ] 3.6 sitemap.ts (all public URLs, lastmod), robots.ts; metadataBase/canonical
-- [ ] 3.7 components: PostCard, ui server-safe set, Navbar/mode-toggle/theme-provider client, next/image covers/avatars
-- [ ] 3.8 loading/error/not-found per segment; delete smoke page after 3.3-3.5
+- [x] 3.1 lib/markdown.ts server pipeline (remark→gfm→rehype-sanitize→highlight→stringify)
+- [x] 3.2 lib/seo.ts builders; utils.ts port (cn, slugify, readingTime, formatDate)
+- [x] 3.3 app/page.tsx SSG (dynamic on q/category/tag searchParams), queries in unstable_cache tag 'posts', revalidate 300
+- [x] 3.4 posts/[slug]: generateStaticParams(5), generateMetadata Article, JSON-LD, render-time views increment (D3), not-found()
+- [x] 3.5 categories/+[slug] y authors/[id]: SSG, CollectionPage/ProfilePage metadata, Person JSON-LD
+- [x] 3.6 sitemap.ts (all public URLs, lastmod), robots.ts; metadataBase/canonical
+- [x] 3.7 components: PostCard, ui server-safe set, Navbar/mode-toggle/theme-provider client, next/image covers/avatars
+- [x] 3.8 loading/error/not-found per segment; delete smoke page after 3.3-3.5
 
 ## Phase 3: Admin
 - [ ] 4.1 admin/page.tsx RSC list (force-dynamic) + new/ + edit/[id]/ shells
