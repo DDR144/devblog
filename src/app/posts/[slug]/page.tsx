@@ -65,10 +65,15 @@ export default async function PostPage({ params }: PostPageProps) {
   // Render-time views increment (D3: fire-and-forget, no cache invalidation).
   // Must NOT be awaited: blocking the render exhausts the pgbouncer pool
   // (connection_limit=1) during parallel prerender of the 5 seeded posts (P2024).
-  void prisma.post.update({
-    where: { id: post.id },
-    data: { views: { increment: 1 } },
-  });
+  // The promise MUST stay referenced: Prisma Client drops unawaited/unreferenced
+  // promises (void kills the query silently); .catch keeps the commit alive with
+  // error swallowing so a DB hiccup can never fail the render.
+  prisma.post
+    .update({
+      where: { id: post.id },
+      data: { views: { increment: 1 } },
+    })
+    .catch(() => {});
 
   const htmlContent = await renderMarkdown(post.content);
   const jsonLd = buildArticleJsonLd({
