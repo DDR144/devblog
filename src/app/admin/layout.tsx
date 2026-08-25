@@ -1,16 +1,22 @@
+"use client";
+
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-
-export const metadata = {
-  title: "Admin | DevBlog",
-  description: "Manage your blog posts and content",
-};
+import { useRouter } from "next/navigation";
 
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const router = useRouter();
+
+  async function handleLogout() {
+    await fetch("/api/admin/logout", { method: "POST" });
+    router.push("/admin/login");
+    router.refresh();
+  }
+
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <header className="flex items-center justify-between border-b border-border pb-4">
@@ -29,9 +35,14 @@ export default function AdminLayout({
             </Link>
           </nav>
         </div>
-        <Link href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-          ← Back to blog
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            ← Back to blog
+          </Link>
+          <Button variant="ghost" size="sm" onClick={handleLogout}>
+            Cerrar sesión
+          </Button>
+        </div>
       </header>
       <main>{children}</main>
     </div>
